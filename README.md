@@ -227,7 +227,7 @@ torchrun --nnodes=1 --nproc_per_node=1 --master_port 29605 hymm_sp/sample_batch.
 
 ## 🔗 BibTeX
 
-If you find [Hunyuan-GameCraft](https://arxiv.org/pdf/2505.20156) useful for your research and applications, please cite using this BibTeX:
+If you find [Hunyuan-GameCraft](https://arxiv.org/abs/2506.17201) useful for your research and applications, please cite using this BibTeX:
 
 ```BibTeX
 @misc{li2025hunyuangamecrafthighdynamicinteractivegame,
