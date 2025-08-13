@@ -144,7 +144,6 @@ torchrun --nnodes=1 --nproc_per_node=8 --master_port 29605 hymm_sp/sample_batch.
     --action-speed-list 0.2 0.2 0.2 0.2 \
     --seed 250160 \
     --infer-steps 50 \
-    --use-fp8 \
     --flow-shift-eval-video 5.0 \
     --save-path './results/'
 
@@ -196,8 +195,8 @@ For example, to generate a video with 1 GPU with Low-VRAM (over 24GB), you can u
 #!/bin/bash
 JOBS_DIR=$(dirname $(dirname "$0"))
 export PYTHONPATH=${JOBS_DIR}:$PYTHONPATH
-export MODEL_BASE="/path/to/models"
-checkpoint_path="/path/to/ckpts"
+export MODEL_BASE="weights/stdmodels"
+checkpoint_path="weights/gamecraft_models/mp_rank_00_model_states_distill.pt"
 
 current_time=$(date "+%Y.%m.%d-%H.%M.%S")
 modelname='Tencent_hunyuanGameCraft_720P'
