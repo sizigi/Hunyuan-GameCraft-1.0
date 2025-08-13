@@ -13,17 +13,19 @@
 </div>
 
 <div align="center">
-  <a href="https://huggingface.co/tencent/Hunyuan-GameCraft-1.0"><img src="https://img.shields.io/static/v1?label=Hunyuan-GameCraft-1.0&message=Hunyuan-GameCraft-1.0&color=yellow"></a> &ensp;
+  <a href="https://huggingface.co/tencent/Hunyuan-GameCraft-1.0"><img src="https://img.shields.io/static/v1?label=Huggingface&message=Hunyuan-GameCraft-1.0&color=yellow"></a> &ensp;
 </div>
 
 ![image](asset/teaser.png)
 
-> [**Hunyuan-GameCraft: High-dynamic Interactive Game Video Generation with Hybrid History Condition**](https://arxiv.org/abs/2506.17201) <be>
+> [**Hunyuan-GameCraft: High-dynamic Interactive Game Video Generation with Hybrid History Condition**](https://arxiv.org/pdf/2505.20156) <be>
+
 <div>
     <a href="https://scholar.google.com/citations?user=i-2ghuYAAAAJ&hl=zh-CN" target="_blank">Jiaqi Li</a><sup>1,</sup><sup>2</sup><sup>*</sup>,</span>
     <a href="https://junshutang.github.io/" target="_blank">Junshu Tang</a><sup>1</sup><sup>*</sup>, </span>
     <a href="https://hunyuan-gamecraft.github.io/" target="_blank">Zhiyong Xu</a><sup>1</sup>,</span>
-    <a href="https://hunyuan-gamecraft.github.io/" target="_blank">Longhuang Wu</a><sup>1</sup>,</span>
+    <a href="https://hunyuan-gamecraft.github.io/" target="_blank">Longhuang Wu</a><sup>1</sup>,
+    </br></span>
     <a href="https://hunyuan-gamecraft.github.io/" target="_blank">Yuan Zhou</a><sup>1</sup>,</span>
     <a href="https://www.sshao.com/" target="_blank">Shuai Shao</a><sup>1</sup>,</span>
     <a href="https://hunyuan-gamecraft.github.io/" target="_blank">Tianbao Yu</a><sup>1</sup>,</span><a href="https://hunyuan-gamecraft.github.io/" target="_blank">Zhiguo Cao</a><sup>2</sup>,</span>
@@ -32,11 +34,12 @@
 
 <div>
     <sup>1</sup>Hunyuan, Tencent&emsp;
-    </br>
     <sup>2</sup>Huazhong University of Science and Technology&emsp;
     </br>
     <sup>*</sup>Equal Contribution&emsp;
 </div>
+
+
 
 ## 🔥🔥🔥 News!!
 * Aug  14, 2025: 👋 We release the inference code and model weights of Hunyuan-GameCraft. [Download](weights/README.md).
