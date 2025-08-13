@@ -118,14 +118,13 @@ The details of download pretrained models are shown [here](weights/README.md).
 
 ## 🚀 Parallel Inference on Multiple GPUs
 
-For example, to generate a video with 8 GPUs, you can use the following command:
-
+For example, to generate a video using 8 GPUs, you can use the following command, where `--action-list w s d a` simulate keyboard manipulation signals to help you generate a video of the corresponding content. `--action-speed-list 0.2 0.2 0.2 0.2` represents the displacement distance and can be replaced with any value between 0 and 3, the length of `action-speed-list` must be the same as `action-list`:
 ```bash
 #!/bin/bash
 JOBS_DIR=$(dirname $(dirname "$0"))
 export PYTHONPATH=${JOBS_DIR}:$PYTHONPATH
-export MODEL_BASE="/path/to/models"
-checkpoint_path="/path/to/ckpts"
+export MODEL_BASE="weights/stdmodels"
+checkpoint_path="weights/gamecraft_models/mp_rank_00_model_states.pt"
 
 current_time=$(date "+%Y.%m.%d-%H.%M.%S")
 modelname='Tencent_hunyuanGameCraft_720P'
@@ -142,13 +141,50 @@ torchrun --nnodes=1 --nproc_per_node=8 --master_port 29605 hymm_sp/sample_batch.
     --action-list w s d a \
     --action-speed-list 0.2 0.2 0.2 0.2 \
     --seed 250160 \
-    --sample-n-frames 33 \
     --infer-steps 50 \
     --use-fp8 \
     --flow-shift-eval-video 5.0 \
     --save-path './results/'
 
 ```
+
+
+Additionally, we support FP8 optimization and [SageAttn](https://github.com/thu-ml/SageAttention). To enable FP8, simply add the `--use-fp8` to your command. 
+And install SageAttention with:
+```bash
+git clone https://github.com/thu-ml/SageAttention.git
+cd SageAttention 
+python setup.py install  # or pip install -e .
+```
+
+We also provide accelerated model, you can use the following command:
+```bash
+#!/bin/bash
+JOBS_DIR=$(dirname $(dirname "$0"))
+export PYTHONPATH=${JOBS_DIR}:$PYTHONPATH
+export MODEL_BASE="weights/stdmodels"
+checkpoint_path="weights/gamecraft_models/mp_rank_00_model_states_distill.pt"
+
+current_time=$(date "+%Y.%m.%d-%H.%M.%S")
+modelname='Tencent_hunyuanGameCraft_720P'
+
+torchrun --nnodes=1 --nproc_per_node=8 --master_port 29605 hymm_sp/sample_batch.py \
+    --image-path "asset/village.png" \
+    --prompt "A charming medieval village with cobblestone streets, thatched-roof houses, and vibrant flower gardens under a bright blue sky." \
+    --add-neg-prompt "overexposed, low quality, deformation, a poor composition, bad hands, bad teeth, bad eyes, bad limbs, distortion, blurring, text, subtitles, static, picture, black border." \
+    --ckpt ${checkpoint_path} \
+    --video-size 704 1216 \
+    --cfg-scale 1.0 \
+    --image-start \
+    --action-list w s d a \
+    --action-speed-list 0.2 0.2 0.2 0.2 \
+    --seed 250160 \
+    --infer-steps 8 \
+    --use-fp8 \
+    --flow-shift-eval-video 5.0 \
+    --save-path './results_distill/'
+```
+
 
 ## 🔑 Single-gpu with Low-VRAM Inference
 
