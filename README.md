@@ -21,7 +21,6 @@
 > [**Hunyuan-GameCraft: High-dynamic Interactive Game Video Generation with Hybrid History Condition**](https://arxiv.org/abs/2506.17201) <be>
 
 ## 🔥🔥🔥 News!!
-* Jun 06, 2025: 🔥 Hunyuan-GameCraft supports **Single GPU** with only **10GB VRAM**, with **DeepCache** included.
 * Aug  14, 2025: 👋 We release the inference code and model weights of Hunyuan-GameCraft. [Download](weights/README.md).
 
 
