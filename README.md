@@ -25,7 +25,6 @@
     <a href="https://junshutang.github.io/" target="_blank">Junshu Tang</a><sup>1</sup><sup>*</sup>, </span>
     <a href="https://hunyuan-gamecraft.github.io/" target="_blank">Zhiyong Xu</a><sup>1</sup>,</span>
     <a href="https://hunyuan-gamecraft.github.io/" target="_blank">Longhuang Wu</a><sup>1</sup>,
-    </br></span>
     <a href="https://hunyuan-gamecraft.github.io/" target="_blank">Yuan Zhou</a><sup>1</sup>,</span>
     <a href="https://www.sshao.com/" target="_blank">Shuai Shao</a><sup>1</sup>,</span>
     <a href="https://hunyuan-gamecraft.github.io/" target="_blank">Tianbao Yu</a><sup>1</sup>,</span><a href="https://hunyuan-gamecraft.github.io/" target="_blank">Zhiguo Cao</a><sup>2</sup>,</span>
