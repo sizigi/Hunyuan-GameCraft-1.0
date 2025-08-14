@@ -196,7 +196,7 @@ For example, to generate a video with 1 GPU with Low-VRAM (over 24GB), you can u
 JOBS_DIR=$(dirname $(dirname "$0"))
 export PYTHONPATH=${JOBS_DIR}:$PYTHONPATH
 export MODEL_BASE="weights/stdmodels"
-checkpoint_path="weights/gamecraft_models/mp_rank_00_model_states_distill.pt"
+checkpoint_path="weights/gamecraft_models/mp_rank_00_model_states.pt"
 
 current_time=$(date "+%Y.%m.%d-%H.%M.%S")
 modelname='Tencent_hunyuanGameCraft_720P'
