@@ -36,7 +36,7 @@
   - [📑 Open-source Plan](#-open-source-plan)
   - [Contents](#contents)
   - [**Abstract**](#abstract)
-  - [**Overall Architecture**](#Hunyuan-GameCraft-overall-architecture)
+  - [**Overall Architecture**](#-overall-architecture)
   - [📜 Requirements](#-requirements)
   - [🛠️ Dependencies and Installation](#️-dependencies-and-installation)
     - [Installation Guide for Linux](#installation-guide-for-linux)
