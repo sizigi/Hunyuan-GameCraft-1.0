@@ -7,7 +7,6 @@ HunyuanVideo-Avatar
   │  ├──gamecraft_models
   │  │  │──mp_rank_00_model_states.pt
   │  │  │──mp_rank_00_model_states_distill.pt
-  │  │  │──mp_rank_00_model_states_fp8_map.pt
   │  │──stdmodels
   │  │  ├──vae_3d
   │  │  │  │──hyvae
