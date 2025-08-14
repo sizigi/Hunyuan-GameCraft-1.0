@@ -7,7 +7,7 @@
 # **Hunyuan-GameCraft** 🎮
  
 <div align="center">
-  <a href="https://github.com/Tencent-Hunyuan/Hunyuan-GameCraft-1.0"><img src="https://img.shields.io/static/v1?label=Hunyuan-GameCraft-1.0%20Code&message=Github&color=blue"></a> &ensp;
+  <a href="https://github.com/Tencent-Hunyuan/Hunyuan-GameCraft-1.0"><img src="https://img.shields.io/static/v1?label=Code&message=Github&color=blue"></a> &ensp;
   <a href="https://hunyuan-gamecraft.github.io/"><img src="https://img.shields.io/static/v1?label=Project%20Page&message=Web&color=green"></a> &ensp;
 <a href="https://arxiv.org/abs/2506.17201"><img src="https://img.shields.io/badge/ArXiv-2506.17201-red"></a> &ensp;
 </div>
