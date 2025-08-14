@@ -18,7 +18,7 @@
 
 ![image](asset/teaser.png)
 
-> [**Hunyuan-GameCraft: High-dynamic Interactive Game Video Generation with Hybrid History Condition**](https://arxiv.org/pdf/2505.20156) <be>
+> [**Hunyuan-GameCraft: High-dynamic Interactive Game Video Generation with Hybrid History Condition**](https://arxiv.org/abs/2506.17201) <be>
 
 
 
