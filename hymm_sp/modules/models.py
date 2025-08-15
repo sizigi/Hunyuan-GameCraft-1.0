@@ -163,7 +163,7 @@ class DoubleStreamBlock(nn.Module):
         v = torch.cat((img_v, txt_v), dim=1)
 
         # Compute attention.
-        if CPU_OFFLOAD or DISABLE_SP:
+        if DISABLE_SP:
             assert cu_seqlens_q.shape[0] == 2 * img.shape[0] + 1
 
             q, k, v = [
@@ -311,7 +311,7 @@ class SingleStreamBlock(nn.Module):
         if CPU_OFFLOAD: torch.cuda.empty_cache()
 
         # Compute attention.
-        if CPU_OFFLOAD or DISABLE_SP:
+        if DISABLE_SP:
             assert cu_seqlens_q.shape[0] == 2 * x.shape[0] + 1, \
                 f"cu_seqlens_q.shape:{cu_seqlens_q.shape}, x.shape[0]:{x.shape[0]}"
             # [b, s+l, a, d] -> [s+l, b, a, d]

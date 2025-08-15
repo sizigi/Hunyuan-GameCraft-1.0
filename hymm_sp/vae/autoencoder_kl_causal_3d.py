@@ -183,7 +183,7 @@ class AutoencoderKLCausal3D(ModelMixin, ConfigMixin, FromOriginalVAEMixin):
 
         # ============= parallism related code ===================
         world_size = cur_world_size()
-        self.parallel_decode = get_sequence_parallel_state()
+        self.parallel_decode = False if CPU_OFFLOAD else get_sequence_parallel_state()
         print("WORLD SIZE: ", world_size)
 
 

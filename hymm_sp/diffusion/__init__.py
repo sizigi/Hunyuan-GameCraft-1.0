@@ -24,6 +24,7 @@ def load_diffusion_pipeline(args, rank, vae, text_encoder, text_encoder_2, model
                                        progress_bar_config=progress_bar_config,
                                        args=args,
                                        )
-    pipeline = pipeline.to(device)
+    if not args.cpu_offload:
+        pipeline = pipeline.to(device)
 
     return pipeline
