@@ -1,3 +1,4 @@
+# modified from https://github.com/neuralmagic/AutoFP8/blob/main/auto_fp8/quantize.py
 import gc
 from typing import Tuple
 import copy
