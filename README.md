@@ -63,7 +63,7 @@ Given a reference image and the corresponding prompt, the keyboard or mouse sign
 ## 📜 Requirements
 
 * An NVIDIA GPU with CUDA support is required. 
-  * The model is tested on a machine with 8GPUs.
+  * The model is tested on a machine with 8*H20/H800GPUs.
   * **Minimum**: The minimum GPU memory required is 24GB but very slow.
   * **Recommended**: We recommend using a GPU with 80GB of memory for better generation quality.
 * Tested operating system: Linux
@@ -117,7 +117,10 @@ The details of download pretrained models are shown [here](weights/README.md).
 
 ## 🚀 Parallel Inference on Multiple GPUs
 
-For example, to generate a video using 8 GPUs, you can use the following command, where `--action-list w s d a` simulate keyboard manipulation signals to help you generate a video of the corresponding content. `--action-speed-list 0.2 0.2 0.2 0.2` represents the displacement distance and can be replaced with any value between 0 and 3, the length of `action-speed-list` must be the same as `action-list`:
+For example, to generate a video using 8 GPUs, you can use the following command, where `--action-list w s d a` simulate keyboard manipulation signals to help you generate a video of the corresponding content. `--action-speed-list 0.2 0.2 0.2 0.2` represents the displacement distance and can be replaced with any value between 0 and 3. 
+
+You can try any combination and any length of the action list (one action per 33 frames, 25FPS) to generate a long video, and make sure the length of `--action-speed-list` must be the same as `--action-list`. It should be noticed that the inference time is linearly related to the action length:
+
 ```bash
 #!/bin/bash
 JOBS_DIR=$(dirname $(dirname "$0"))
@@ -155,7 +158,7 @@ cd SageAttention
 python setup.py install  # or pip install -e .
 ```
 
-We also provide accelerated model, you can use the following command:
+We also provide an accelerated model, you can use the following command:
 ```bash
 #!/bin/bash
 JOBS_DIR=$(dirname $(dirname "$0"))
@@ -186,7 +189,7 @@ torchrun --nnodes=1 --nproc_per_node=8 --master_port 29605 hymm_sp/sample_batch.
 
 ## 🔑 Single-gpu with Low-VRAM Inference
 
-For example, to generate a video with 1 GPU with Low-VRAM (over 24GB), you can use the following command:
+For example, to generate a video with 1 GPU with Low-VRAM (minimum GPU memory required is 24GB for 704px1216p but very slow), you can use the following command:
 
 ```bash
 #!/bin/bash
@@ -218,9 +221,45 @@ torchrun --nnodes=1 --nproc_per_node=1 --master_port 29605 hymm_sp/sample_batch.
     --flow-shift-eval-video 5.0 \
     --cpu-offload \
     --use-fp8 \
-    --save-path './results/'
+    --save-path './results_poor/'
 
 ```
+
+As for using the accelerated model, you can use the following command:
+
+```bash
+#!/bin/bash
+JOBS_DIR=$(dirname $(dirname "$0"))
+export PYTHONPATH=${JOBS_DIR}:$PYTHONPATH
+export MODEL_BASE="weights/stdmodels"
+checkpoint_path="weights/gamecraft_models/mp_rank_00_model_states_distill.pt"
+
+current_time=$(date "+%Y.%m.%d-%H.%M.%S")
+modelname='Tencent_hunyuanGameCraft_720P'
+
+# disable sp and cpu offload
+export DISABLE_SP=1
+export CPU_OFFLOAD=1
+
+torchrun --nnodes=1 --nproc_per_node=1 --master_port 29605 hymm_sp/sample_batch.py \
+    --image-path "asset/village.png" \
+    --prompt "A charming medieval village with cobblestone streets, thatched-roof houses, and vibrant flower gardens under a bright blue sky." \
+    --add-neg-prompt "overexposed, low quality, deformation, a poor composition, bad hands, bad teeth, bad eyes, bad limbs, distortion, blurring, text, subtitles, static, picture, black border." \
+    --ckpt ${checkpoint_path} \
+    --video-size 704 1216 \
+    --cfg-scale 1.0 \
+    --image-start \
+    --action-list w a d s \
+    --action-speed-list 0.2 0.2 0.2 0.2 \
+    --seed 250160 \
+    --sample-n-frames 33 \
+    --infer-steps 8 \
+    --flow-shift-eval-video 5.0 \
+    --cpu-offload \
+    --use-fp8 \
+    --save-path './results_distill_poor/'
+```
+
 
 
 ## 🔗 BibTeX
