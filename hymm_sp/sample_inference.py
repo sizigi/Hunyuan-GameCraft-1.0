@@ -159,8 +159,8 @@ def generate_motion_segment(current_pose,
             
         current_pose['position'] = positions[-1]
         
-    elif motion_type.endswith('rot'):
-        axis = motion_type.split('_')[0]
+    elif motion_type.startswith('rotate'):
+        axis = motion_type.split('_')[1]
         total_rotation = np.zeros(3)
         
         if axis == 'left':
