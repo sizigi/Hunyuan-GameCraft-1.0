@@ -20,6 +20,7 @@
 
 
 ## 🔥🔥🔥 News!!
+* Aug  21, 2025: 📣 We release the code of the [Gradio demo](scripts/launch_app_sp.sh). Welcome and have a try!! 🎮
 * Aug  14, 2025: 👋 We release the inference code and model weights of Hunyuan-GameCraft. [Download](weights/README.md).
 
 
@@ -28,7 +29,8 @@
 - Hunyuan-GameCraft
   - [x] Inference 
   - [x] Checkpoints
-  - [ ] Gradio & Huggingface Demo
+  - [x] [Gradio](#️-gradio-launching)
+  - [ ] HuggingFace Demo
 
 ## Contents
 - [**Hunyuan-GameCraft** 🎮](#hunyuan-gamecraft-)
@@ -263,7 +265,7 @@ torchrun --nnodes=1 --nproc_per_node=1 --master_port 29605 hymm_sp/sample_batch.
 Refer to the corresponding comments to modify the following sections in `scripts/launch_app_sp.sh`:
 ``` bash
 export MODEL_BASE="weights/stdmodels"
-export CKPT_PATH="weights/gamecraft_models/mp_rank_00_model_states_distill.pt"
+export CKPT_PATH="weights/gamecraft_models/mp_rank_00_model_states.pt"
 export API_PORT="8082" # For distributed inference server port
 export GRADIO_PORT="8080" # For GradioUI port
 export VIDEO_ENC="vp09" # "avc1"(faster)
