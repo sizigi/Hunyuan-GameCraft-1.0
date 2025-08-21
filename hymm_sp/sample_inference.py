@@ -15,7 +15,7 @@ from hymm_sp.inference import Inference
 from hymm_sp.diffusion.schedulers import FlowMatchDiscreteScheduler
 from packaging import version as pver
 
-ACTION_DICT = {"w": "forward", "a": "left", "d": "right", "s": "backward"}
+ACTION_DICT = {"w": "forward", "a": "left", "d": "right", "s": "backward", "left_rot":"left_rot", "right_rot":"right_rot", "up_rot":"up_rot", "down_rot":"down_rot",}
             
 def custom_meshgrid(*args):
     # ref: https://pytorch.org/docs/stable/generated/torch.meshgrid.html?highlight=meshgrid#torch.meshgrid
@@ -159,18 +159,18 @@ def generate_motion_segment(current_pose,
             
         current_pose['position'] = positions[-1]
         
-    elif motion_type.startswith('rotate'):
-        axis = motion_type.split('_')[1]
+    elif motion_type.endswith('rot'):
+        axis = motion_type.split('_')[0]
         total_rotation = np.zeros(3)
         
         if axis == 'left':
-            total_rotation[1] = value
-        elif axis == 'right':
-            total_rotation[1] = -value 
-        elif axis == 'up':
-            total_rotation[0] = -value
-        elif axis == 'down':
             total_rotation[0] = value  
+        elif axis == 'right':
+            total_rotation[0] = -value   
+        elif axis == 'up':
+            total_rotation[2] = -value  
+        elif axis == 'down':
+            total_rotation[2] = value   
             
         step = total_rotation / duration
         
