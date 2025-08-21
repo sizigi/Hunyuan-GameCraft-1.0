@@ -9,10 +9,8 @@ rm -f ./gradio_results/shutdown_worker.signal
 
 JOBS_DIR=$(dirname $(dirname "$0"))
 export PYTHONPATH=${JOBS_DIR}:$PYTHONPATH
-# export MODEL_BASE="weights/stdmodels"
-# export CKPT_PATH="weights/gamecraft_models/mp_rank_00_model_states_distill.pt"
-export MODEL_BASE="/apdcephfs_jn/share_302243908/aladdinwang/projects/stdmodels/models"
-export CKPT_PATH="/apdcephfs_jn3/share_302243908/jaqli/game_ctrl/exp/Exp15c2cMix_0616_ftrender_2e5_from3k/2025.06.16-21.53.48/checkpoint/global_step1000/torch/mp_rank_00_model_states.pt"
+export MODEL_BASE="weights/stdmodels"
+export CKPT_PATH="weights/gamecraft_models/mp_rank_00_model_states_distill.pt"
 export API_PORT="8082" # For distributed inference server port
 export GRADIO_PORT="8080" # For GradioUI port
 export VIDEO_ENC="vp09" # "avc1"(faster)
