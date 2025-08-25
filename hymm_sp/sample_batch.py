@@ -134,7 +134,9 @@ def main():
     seed = args.seed if args.seed else random.randint(0, 1_000_000)
     
     # Define image transformation pipeline for input reference images
-    closest_size = (704, 1216)
+    # closest_size = (704, 1216)
+    closest_size = args.video_size
+    logger.info(f"video size: {args.video_size}")
     ref_image_transform = transforms.Compose([
         CropResize(closest_size),
         transforms.CenterCrop(closest_size),
@@ -250,7 +252,7 @@ def main():
             action_id=action_id,
             action_speed=action_speed_list[idx],                    
             is_image=is_image,
-            size=(704, 1216),
+            size=args.video_size,
             seed=seed,
             last_latents=last_latents,  # Previous frame latents for continuity
             ref_latents=ref_latents,    # Reference latents for style consistency
