@@ -654,7 +654,7 @@ class HunyuanVideoSampler(Inference):
                 step,
             )
         else:
-            pose = ActionToPoseFromID(action_id, value=action_speed)
+            pose = ActionToPoseFromID(action_id, value=action_speed, duration=video_length)
             pose_embeds, uncond_pose_embeds, poses = GetPoseEmbedsFromPoses(
                 pose,
                 target_height,
@@ -663,6 +663,8 @@ class HunyuanVideoSampler(Inference):
                 kwargs.get("flip", False),
                 0,
             )
+            logger.info(f"pose embeds shape: {pose_embeds.shape}")
+            logger.info(f"uncond_pose_embeds shape: {uncond_pose_embeds.shape}")
 
         if is_image:
             target_length = video_length + 1
@@ -802,6 +804,83 @@ class HunyuanVideoSampler(Inference):
                 output: {output_dir}"""
             self.logger.info(debug_str)
 
+        # # Comprehensive logging of all pipeline parameters
+        # self.logger.info("=== COMPREHENSIVE PIPELINE PARAMETERS ===")
+        
+        # # Input parameters
+        # self.logger.info("--- Input Parameters ---")
+        # self.logger.info(f"prompt: {prompt}")
+        # self.logger.info(f"negative_prompt: {negative_prompt}")
+        # self.logger.info(f"is_image: {is_image}")
+        # self.logger.info(f"target_height: {target_height}")
+        # self.logger.info(f"target_width: {target_width}") 
+        # self.logger.info(f"video_length (input): {video_length}")
+        # self.logger.info(f"target_length (computed): {target_length}")
+        
+        # # Latent tensors
+        # self.logger.info("--- Latent Tensors ---")
+        # self.logger.info(f"last_latents shape: {last_latents.shape if last_latents is not None else None}")
+        # self.logger.info(f"ref_latents shape: {ref_latents.shape if ref_latents is not None else None}")
+        # self.logger.info(f"init_latents shape: {init_latents.shape if init_latents is not None else None}")
+        # self.logger.info(f"uncond_ref_latents shape: {uncond_ref_latents.shape if uncond_ref_latents is not None else None}")
+        
+        # # Pose embeddings
+        # self.logger.info("--- Pose/Camera Parameters ---")
+        # self.logger.info(f"pose_embeds shape: {pose_embeds.shape if pose_embeds is not None else None}")
+        # self.logger.info(f"uncond_pose_embeds shape: {uncond_pose_embeds.shape if uncond_pose_embeds is not None else None}")
+        # self.logger.info(f"action_id: {action_id}")
+        # self.logger.info(f"action_speed: {action_speed}")
+        
+        # # Text embeddings
+        # self.logger.info("--- Text Embeddings ---")
+        # self.logger.info(f"prompt_embeds shape: {prompt_embeds.shape if prompt_embeds is not None else None}")
+        # self.logger.info(f"negative_prompt_embeds shape: {negative_prompt_embeds.shape if negative_prompt_embeds is not None else None}")
+        # self.logger.info(f"attention_mask shape: {attention_mask.shape if attention_mask is not None else None}")
+        # self.logger.info(f"negative_attention_mask shape: {negative_attention_mask.shape if negative_attention_mask is not None else None}")
+        
+        # # Generation parameters
+        # self.logger.info("--- Generation Parameters ---")
+        # self.logger.info(f"num_inference_steps: {infer_steps}")
+        # self.logger.info(f"guidance_scale: {guidance_scale}")
+        # self.logger.info(f"flow_shift: {flow_shift}")
+        # self.logger.info(f"denoise_strength: {denoise_strength}")
+        # self.logger.info(f"num_videos_per_prompt: {num_videos_per_prompt}")
+        # self.logger.info(f"batch_size: {batch_size}")
+        # self.logger.info(f"seeds: {seeds}")
+        # self.logger.info(f"generator count: {len(generator) if generator else 0}")
+        
+        # # Mask parameters
+        # self.logger.info("--- Mask Parameters ---")
+        # self.logger.info(f"mask shape: {mask.shape if mask is not None else None}")
+        
+        # # RoPE parameters
+        # self.logger.info("--- RoPE (Rotary Position Embedding) ---")
+        # self.logger.info(f"freqs_cos shape: {freqs_cos.shape if freqs_cos is not None else None}")
+        # self.logger.info(f"freqs_sin shape: {freqs_sin.shape if freqs_sin is not None else None}")
+        # self.logger.info(f"n_tokens: {n_tokens}")
+        
+        # # Model/Pipeline configuration
+        # self.logger.info("--- Model Configuration ---")
+        # self.logger.info(f"ip_cfg_scale: {self.args.ip_cfg_scale}")
+        # self.logger.info(f"use_deepcache: {use_deepcache}")
+        # self.logger.info(f"use_sage: {use_sage}")
+        # self.logger.info(f"cpu_offload: {cpu_offload}")
+        # self.logger.info(f"vae_ver: {self.args.vae}")
+        # self.logger.info(f"enable_tiling: {self.args.vae_tiling}")
+        # self.logger.info(f"output_type: {output_type}")
+        # self.logger.info(f"data_type: {'video' if target_length > 1 else 'image'}")
+        # self.logger.info(f"is_progress_bar: {True}")
+        # self.logger.info(f"return_latents: {return_latents}")
+        
+        # # Scheduler info
+        # self.logger.info("--- Scheduler Configuration ---")
+        # self.logger.info(f"scheduler class: {type(scheduler).__name__}")
+        # self.logger.info(f"scheduler shift: {flow_shift}")
+        # self.logger.info(f"scheduler reverse: {self.args.flow_reverse}")
+        # self.logger.info(f"scheduler solver: {self.args.flow_solver}")
+        
+        # self.logger.info("========================================")
+
         start_time = time.time()
         samples = self.pipeline(
             prompt=prompt,
@@ -838,6 +917,7 @@ class HunyuanVideoSampler(Inference):
             cpu_offload=cpu_offload,
             return_latents=return_latents,
             use_sage=use_sage,
+            is_image=is_image,
         )
         if samples is None:
             return None

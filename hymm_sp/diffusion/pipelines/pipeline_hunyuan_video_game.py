@@ -20,6 +20,7 @@ import inspect
 from typing import Any, Callable, Dict, List, Optional, Union, Tuple
 import numpy as np
 import torch
+from loguru import logger
 from packaging import version
 from diffusers.utils import BaseOutput
 from dataclasses import dataclass
@@ -47,7 +48,7 @@ from hymm_sp.text_encoder import TextEncoder
 from einops import rearrange
 from ...modules import HYVideoDiffusionTransformer
 
-logger = logging.get_logger(__name__)  # pylint: disable=invalid-name
+# logger = logging.get_logger(__name__)  # pylint: disable=invalid-name
 
 EXAMPLE_DOC_STRING = """"""
 
@@ -656,6 +657,7 @@ class HunyuanVideoGamePipeline(DiffusionPipeline):
         mask = None,
         cpu_offload: bool=False,
         use_sage: bool=False,
+        is_image: bool=False,
         **kwargs,
     ):
         r"""
@@ -888,6 +890,8 @@ class HunyuanVideoGamePipeline(DiffusionPipeline):
             frame_length = (video_length - 1) // 8 + 1
         else:
             frame_length = video_length
+        # logger.info(f"video_length: {video_length}")
+        # logger.info(f"frame_length: {frame_length}")
 
         # 5. Prepare latent variables
         num_channels_latents = self.transformer.config.in_channels
@@ -908,9 +912,10 @@ class HunyuanVideoGamePipeline(DiffusionPipeline):
         )
         
         gt_latents = gt_latents.repeat(1, 1, frame_length, 1, 1)
+        # logger.info(f"gt_latents shape: {gt_latents.shape}")
         gt_latents_concat = gt_latents.clone()
         
-        if frame_length == 10:
+        if is_image:
             gt_latents_concat[:,:,1:,:,:] = 0.0
             mask_concat = torch.ones(gt_latents.shape[0], 
                                      1, 
@@ -931,6 +936,7 @@ class HunyuanVideoGamePipeline(DiffusionPipeline):
                                    gt_latents.shape[3], 
                                    gt_latents.shape[4])
             mask_concat = torch.cat([mask_ones, mask_zeros], dim=2).to(device=gt_latents.device)
+        # logger.info(f"mask_concat shape: {mask_concat.shape}")
 
         # 6. Prepare extra step kwargs. 
         extra_step_kwargs = self.prepare_extra_func_kwargs(
@@ -963,10 +969,12 @@ class HunyuanVideoGamePipeline(DiffusionPipeline):
                 
                 # expand the latents if we are doing classifier free guidance
                 latents_concat = torch.concat([latents, gt_latents_concat, mask_concat], dim=1)
+                # logger.info(f"latents_concat shape: {latents_concat.shape}")
                 latent_model_input = torch.cat([latents_concat] * 2) \
                     if self.do_classifier_free_guidance else latents_concat
 
                 latent_model_input = self.scheduler.scale_model_input(latent_model_input, t)
+                # logger.info(f"latent_model_input shape: {latent_model_input.shape}")
                 t_expand = t.repeat(latent_model_input.shape[0])
 
                 t_expand = t.repeat(latent_model_input.shape[0])
@@ -999,7 +1007,8 @@ class HunyuanVideoGamePipeline(DiffusionPipeline):
                                                              guidance=guidance_expand,
                                                              return_dict=True,
                                                              is_cache=is_cache, 
-                                                             cam_latents=cam_latents_[:1])['x']
+                                                             cam_latents=cam_latents_[:1],
+                                                             is_image=is_image)['x']
                         torch.cuda.empty_cache()
                         noise_pred_text = self.transformer(latent_model_input[1:], 
                                                            t_expand[1:], 
@@ -1011,7 +1020,8 @@ class HunyuanVideoGamePipeline(DiffusionPipeline):
                                                            guidance=guidance_expand,
                                                            return_dict=True,
                                                            is_cache=is_cache,
-                                                           cam_latents=cam_latents_[1:])['x']
+                                                           cam_latents=cam_latents_[1:],
+                                                           is_image=is_image)['x']
                         noise_pred = torch.cat([noise_pred_uncond, noise_pred_text], dim=0)
                         torch.cuda.empty_cache()
                     else:
@@ -1028,6 +1038,7 @@ class HunyuanVideoGamePipeline(DiffusionPipeline):
                             is_cache=is_cache,
                             cam_latents=cam_latents_,
                             use_sage=use_sage,
+                            is_image=is_image,
                         )['x']
 
                 # perform guidance

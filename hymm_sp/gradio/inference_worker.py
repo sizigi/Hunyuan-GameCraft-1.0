@@ -360,7 +360,11 @@ def worker_loop(rank, world_size, device):
                     if out_cat is not None:
                         save_path = os.path.join(temp_args.save_path, f"{save_name}.mp4")
                         os.makedirs(temp_args.save_path, exist_ok=True)
-                        save_videos_grid(out_cat, save_path, n_rows=1, fps=24)
+                        # Calculate FPS based on video length (33 frames → 24 fps baseline)
+                        # Logic: 1 starting frame + (video_length-1) actual frames
+                        calculated_fps = max(1, int(24 * (temp_args.sample_n_frames - 1) / 32))
+                        logger.info(f"Using calculated FPS: {calculated_fps} for video length: {temp_args.sample_n_frames}")
+                        save_videos_grid(out_cat, save_path, n_rows=1, fps=calculated_fps)
                         result_data["video_path"] = save_path
                         logger.info(f"Rank {rank}: Video saved to {save_path}")
 

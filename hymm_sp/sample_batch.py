@@ -20,47 +20,48 @@ from hymm_sp.modules.parallel_states import (
     nccl_info,
 )
 
+
 class CropResize:
     """
     Custom transform to resize and crop images to a target size while preserving aspect ratio.
-    
+
     Resizes the image to ensure it covers the target dimensions, then center-crops to the exact size.
     Useful for preparing consistent input dimensions for video generation models.
     """
+
     def __init__(self, size=(704, 1216)):
         """
         Args:
             size (tuple): Target dimensions (height, width) for the output image
         """
-        self.target_h, self.target_w = size  
+        self.target_h, self.target_w = size
 
     def __call__(self, img):
         """
         Apply the transform to an image.
-        
+
         Args:
             img (PIL.Image): Input image to transform
-            
+
         Returns:
             PIL.Image: Resized and cropped image with target dimensions
         """
         # Get original image dimensions
         w, h = img.size
-        
+
         # Calculate scaling factor to ensure image covers target size
-        scale = max(  
+        scale = max(
             self.target_w / w,  # Scale needed to cover target width
-            self.target_h / h   # Scale needed to cover target height
+            self.target_h / h,  # Scale needed to cover target height
         )
-        
+
         # Resize image while preserving aspect ratio
         new_size = (int(h * scale), int(w * scale))
         resize_transform = transforms.Resize(
-            new_size, 
-            interpolation=transforms.InterpolationMode.BILINEAR
+            new_size, interpolation=transforms.InterpolationMode.BILINEAR
         )
         resized_img = resize_transform(img)
-        
+
         # Center-crop to exact target dimensions
         crop_transform = transforms.CenterCrop((self.target_h, self.target_w))
         return crop_transform(resized_img)
@@ -69,7 +70,7 @@ class CropResize:
 def main():
     """
     Main function for video generation using the Hunyuan multimodal model.
-    
+
     Handles argument parsing, distributed setup, model loading, data preparation,
     and video generation with action-controlled transitions. Supports both image-to-video
     and video-to-video generation tasks.
@@ -82,16 +83,20 @@ def main():
     negative_prompt = args.add_neg_prompt
 
     # Initialize distributed training/evaluation environment
-    logger.info("*" * 20) 
+    logger.info("*" * 20)
     initialize_distributed(args.seed)
-    
+
     # Validate model checkpoint path exists
     if not models_root_path.exists():
         raise ValueError(f"Model checkpoint path does not exist: {models_root_path}")
     logger.info("+" * 20)
 
     # Set up output directory
-    save_path = args.save_path if args.save_path_suffix == "" else f'{args.save_path}_{args.save_path_suffix}'
+    save_path = (
+        args.save_path
+        if args.save_path_suffix == ""
+        else f"{args.save_path}_{args.save_path_suffix}"
+    )
     os.makedirs(save_path, exist_ok=True)
     logger.info(f"Generated videos will be saved to: {save_path}")
 
@@ -106,9 +111,9 @@ def main():
     # Load the Hunyuan video sampler model from checkpoint
     logger.info(f"Loading model from checkpoint: {args.ckpt}")
     hunyuan_video_sampler = HunyuanVideoSampler.from_pretrained(
-        args.ckpt, 
-        args=args, 
-        device=device if not args.cpu_offload else torch.device("cpu")
+        args.ckpt,
+        args=args,
+        device=device if not args.cpu_offload else torch.device("cpu"),
     )
     # Update args with model-specific configurations from the checkpoint
     args = hunyuan_video_sampler.args
@@ -116,12 +121,13 @@ def main():
     # Enable CPU offloading if specified to reduce GPU memory usage
     if args.cpu_offload:
         from diffusers.hooks import apply_group_offloading
+
         onload_device = torch.device("cuda")
         apply_group_offloading(
-            hunyuan_video_sampler.pipeline.transformer, 
-            onload_device=onload_device, 
-            offload_type="block_level", 
-            num_blocks_per_group=1
+            hunyuan_video_sampler.pipeline.transformer,
+            onload_device=onload_device,
+            offload_type="block_level",
+            num_blocks_per_group=1,
         )
         logger.info("Enabled CPU offloading for transformer blocks")
 
@@ -132,69 +138,81 @@ def main():
     logger.info(f"Prompt: {prompt}, Image Path {args.image_path}")
     # Generate random seed for reproducibility
     seed = args.seed if args.seed else random.randint(0, 1_000_000)
-    
+
     # Define image transformation pipeline for input reference images
     # closest_size = (704, 1216)
     closest_size = args.video_size
     logger.info(f"video size: {args.video_size}")
-    ref_image_transform = transforms.Compose([
-        CropResize(closest_size),
-        transforms.CenterCrop(closest_size),
-        transforms.ToTensor(), 
-        transforms.Normalize([0.5], [0.5])  # Normalize to [-1, 1] range
-    ])
-    
+    ref_image_transform = transforms.Compose(
+        [
+            CropResize(closest_size),
+            transforms.CenterCrop(closest_size),
+            transforms.ToTensor(),
+            transforms.Normalize([0.5], [0.5]),  # Normalize to [-1, 1] range
+        ]
+    )
+
     # Handle image-based generation (start from a single image)
     if args.image_start:
         # Load and preprocess reference images
-        raw_ref_images = [Image.open(image_path).convert('RGB') for image_path in image_paths]
-        
+        raw_ref_images = [
+            Image.open(image_path).convert("RGB") for image_path in image_paths
+        ]
+
         # Apply transformations and prepare tensor for model input
-        ref_images_pixel_values = [ref_image_transform(ref_image) for ref_image in raw_ref_images]
-        ref_images_pixel_values = torch.cat(ref_images_pixel_values).unsqueeze(0).unsqueeze(2).to(device)
-        
+        ref_images_pixel_values = [
+            ref_image_transform(ref_image) for ref_image in raw_ref_images
+        ]
+        ref_images_pixel_values = (
+            torch.cat(ref_images_pixel_values).unsqueeze(0).unsqueeze(2).to(device)
+        )
+        logger.info(f"ref_images_pixel_values shape: {ref_images_pixel_values.shape}")
+
         # Encode reference images to latent space using VAE
         with torch.autocast(device_type="cuda", dtype=torch.float16, enabled=True):
             if args.cpu_offload:
                 # Move VAE components to GPU temporarily for encoding
-                hunyuan_video_sampler.vae.quant_conv.to('cuda')
-                hunyuan_video_sampler.vae.encoder.to('cuda')
-            
+                hunyuan_video_sampler.vae.quant_conv.to("cuda")
+                hunyuan_video_sampler.vae.encoder.to("cuda")
+
             # Enable tiling for VAE to handle large images efficiently
             hunyuan_video_sampler.pipeline.vae.enable_tiling()
-            
+
             # Encode image to latents and scale by VAE's scaling factor
-            raw_last_latents = hunyuan_video_sampler.vae.encode(
-                ref_images_pixel_values
-            ).latent_dist.sample().to(dtype=torch.float16)  # Shape: (B, C, F, H, W)
+            raw_last_latents = (
+                hunyuan_video_sampler.vae.encode(ref_images_pixel_values)
+                .latent_dist.sample()
+                .to(dtype=torch.float16)
+            )  # Shape: (B, C, F, H, W)
             raw_last_latents.mul_(hunyuan_video_sampler.vae.config.scaling_factor)
             raw_ref_latents = raw_last_latents.clone()
-            
+
             # Clean up
             hunyuan_video_sampler.pipeline.vae.disable_tiling()
             if args.cpu_offload:
                 # Move VAE components back to CPU after encoding
-                hunyuan_video_sampler.vae.quant_conv.to('cpu')
-                hunyuan_video_sampler.vae.encoder.to('cpu')
-
+                hunyuan_video_sampler.vae.quant_conv.to("cpu")
+                hunyuan_video_sampler.vae.encoder.to("cpu")
 
     # Handle video-based generation (start from an existing video)
     else:
         from decord import VideoReader  # Lazy import for video handling
-        
+
         # Validate video file exists
         video_path = args.video_path
         if not os.path.exists(video_path):
             raise RuntimeError(f"Video file not found: {video_path}")
-        
+
         # Load reference images from video metadata
-        raw_ref_images = [Image.open(image_path).convert('RGB') for image_path in image_paths]
+        raw_ref_images = [
+            Image.open(image_path).convert("RGB") for image_path in image_paths
+        ]
 
         # Load video and extract frames
         ref_video = VideoReader(video_path)
         ref_frames_length = len(ref_video)
         logger.info(f"Loaded reference video with {ref_frames_length} frames")
-        
+
         # Preprocess video frames
         transformed_images = []
         for index in range(ref_frames_length):
@@ -202,60 +220,101 @@ def main():
             video_image = ref_video[index].numpy()
             transformed_image = ref_image_transform(Image.fromarray(video_image))
             transformed_images.append(transformed_image)
-        
+
         # Prepare tensor for model input
-        transformed_images = torch.stack(transformed_images, dim=1).unsqueeze(0).to(
-            device=hunyuan_video_sampler.device, 
-            dtype=torch.float16
+        transformed_images = (
+            torch.stack(transformed_images, dim=1)
+            .unsqueeze(0)
+            .to(device=hunyuan_video_sampler.device, dtype=torch.float16)
         )
-        
+        # logger.info(f"transformed_images shape: {transformed_images.shape}")
+
         # Encode video frames to latent space using VAE
         with torch.autocast(device_type="cuda", dtype=torch.float16, enabled=True):
             if args.cpu_offload:
-                hunyuan_video_sampler.vae.quant_conv.to('cuda')
-                hunyuan_video_sampler.vae.encoder.to('cuda')
-            
+                hunyuan_video_sampler.vae.quant_conv.to("cuda")
+                hunyuan_video_sampler.vae.encoder.to("cuda")
+
             hunyuan_video_sampler.pipeline.vae.enable_tiling()
-            
+
             # Encode last 33 frames of video (model-specific requirement)
-            raw_last_latents = hunyuan_video_sampler.vae.encode(
-                transformed_images[:, :, -33:, ...]
-            ).latent_dist.sample().to(dtype=torch.float16)
+            raw_last_latents = (
+                hunyuan_video_sampler.vae.encode(
+                    transformed_images[:, :, -args.sample_n_frames :, ...]
+                )
+                .latent_dist.sample()
+                .to(dtype=torch.float16)
+            )
             raw_last_latents.mul_(hunyuan_video_sampler.vae.config.scaling_factor)
-            
+
             # Encode a single reference frame from the video
-            raw_ref_latents = hunyuan_video_sampler.vae.encode(
-                transformed_images[:, :, -33:-32, ...]
-            ).latent_dist.sample().to(dtype=torch.float16)
+            raw_ref_latents = (
+                hunyuan_video_sampler.vae.encode(
+                    transformed_images[
+                        :, :, -args.sample_n_frames : -args.sample_n_frames + 1, ...
+                    ]
+                )
+                .latent_dist.sample()
+                .to(dtype=torch.float16)
+            )
             raw_ref_latents.mul_(hunyuan_video_sampler.vae.config.scaling_factor)
-            
+
             # Clean up
             hunyuan_video_sampler.pipeline.vae.disable_tiling()
             if args.cpu_offload:
-                hunyuan_video_sampler.vae.quant_conv.to('cpu')
-                hunyuan_video_sampler.vae.encoder.to('cpu')
-    
+                hunyuan_video_sampler.vae.quant_conv.to("cpu")
+                hunyuan_video_sampler.vae.encoder.to("cpu")
+
     # Store references for generation loop
     ref_images = raw_ref_images
     last_latents = raw_last_latents
     ref_latents = raw_ref_latents
-    
+
     # Generate video segments for each action in the action list
     for idx, action_id in enumerate(action_list):
         # Determine if this is the first action and using image start
-        is_image = (idx == 0 and args.image_start)
-        
-        logger.info(f"Generating segment {idx+1}/{len(action_list)} with action ID: {action_id}")
+        is_image = idx == 0 and args.image_start
+
+        logger.info(
+            f"Generating segment {idx+1}/{len(action_list)} with action ID: {action_id}"
+        )
         # Generate video segment with the current action
+        
+        # # Log all predict arguments
+        # logger.info("=== predict() arguments ===")
+        # logger.info(f"prompt: {prompt}")
+        # logger.info(f"action_id: {action_id}")
+        # logger.info(f"action_speed: {action_speed_list[idx]}")
+        # logger.info(f"is_image: {is_image}")
+        # logger.info(f"size: {args.video_size}")
+        # logger.info(f"seed: {seed}")
+        # logger.info(f"last_latents shape: {last_latents.shape if last_latents is not None else None}")
+        # logger.info(f"ref_latents shape: {ref_latents.shape if ref_latents is not None else None}")
+        # logger.info(f"video_length: {args.sample_n_frames}")
+        # logger.info(f"guidance_scale: {args.cfg_scale}")
+        # logger.info(f"num_images_per_prompt: {args.num_images}")
+        # logger.info(f"negative_prompt: {negative_prompt}")
+        # logger.info(f"infer_steps: {args.infer_steps}")
+        # logger.info(f"flow_shift: {args.flow_shift_eval_video}")
+        # logger.info(f"use_linear_quadratic_schedule: {args.use_linear_quadratic_schedule}")
+        # logger.info(f"linear_schedule_end: {args.linear_schedule_end}")
+        # logger.info(f"use_deepcache: {args.use_deepcache}")
+        # logger.info(f"cpu_offload: {args.cpu_offload}")
+        # logger.info(f"ref_images: {len(ref_images) if ref_images else 0} images, first image size: {ref_images[0].size if ref_images and len(ref_images) > 0 else None}")
+        # logger.info(f"output_dir: {save_path}")
+        # logger.info(f"return_latents: {True}")
+        # logger.info(f"use_sage: {args.use_sage}")
+        # logger.info("=========================")
+        
         outputs = hunyuan_video_sampler.predict(
             prompt=prompt,
             action_id=action_id,
-            action_speed=action_speed_list[idx],                    
+            action_speed=action_speed_list[idx],
             is_image=is_image,
             size=args.video_size,
             seed=seed,
             last_latents=last_latents,  # Previous frame latents for continuity
-            ref_latents=ref_latents,    # Reference latents for style consistency
+            ref_latents=ref_latents,  # Reference latents for style consistency
             video_length=args.sample_n_frames,
             guidance_scale=args.cfg_scale,
             num_images_per_prompt=args.num_images,
@@ -271,14 +330,14 @@ def main():
             return_latents=True,
             use_sage=args.use_sage,
         )
-        
+
         # Update latents for next iteration (maintain temporal consistency)
         ref_latents = outputs["ref_latents"]
         last_latents = outputs["last_latents"]
-        
+
         # Save generated video segments if this is the main process (rank 0)
         if rank == 0:
-            sub_samples = outputs['samples'][0]
+            sub_samples = outputs["samples"][0]
 
             # Initialize or concatenate video segments
             if idx == 0:
@@ -286,15 +345,25 @@ def main():
                     out_cat = sub_samples
                 else:
                     # Combine original video frames with generated frames
-                    out_cat = torch.cat([(transformed_images.detach().cpu() + 1) / 2.0, sub_samples], dim=2)
+                    out_cat = torch.cat(
+                        [(transformed_images.detach().cpu() + 1) / 2.0, sub_samples],
+                        dim=2,
+                    )
             else:
                 # Append new segment to existing video
                 out_cat = torch.cat([out_cat, sub_samples], dim=2)
 
             # Save final combined video
-            save_path_mp4 = f"{save_path}/{os.path.basename(args.image_path).split('.')[0]}.mp4"
-            save_videos_grid(out_cat, save_path_mp4, n_rows=1, fps=24)
+            save_path_mp4 = (
+                f"{save_path}/{os.path.basename(args.image_path).split('.')[0]}.mp4"
+            )
+            # Calculate FPS based on video length (33 frames → 24 fps baseline)
+            # Logic: 1 starting frame + (video_length-1) actual frames
+            calculated_fps = max(1, int(24 * (args.sample_n_frames - 1) / 32))
+            logger.info(f"Using calculated FPS: {calculated_fps} for video length: {args.sample_n_frames}")
+            save_videos_grid(out_cat, save_path_mp4, n_rows=1, fps=calculated_fps)
             logger.info(f"Saved generated video to: {save_path_mp4}")
+
 
 if __name__ == "__main__":
     main()

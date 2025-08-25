@@ -617,6 +617,7 @@ class HYVideoDiffusionTransformer(ModelMixin, ConfigMixin):
         is_cache: bool = False,
         cam_latents=None,
         use_sage: bool = False,
+        is_image: bool = False,
     ) -> Union[torch.Tensor, Dict[str, torch.Tensor]]:
         out = {}
         img = x
@@ -650,11 +651,11 @@ class HYVideoDiffusionTransformer(ModelMixin, ConfigMixin):
         camera_condition = cam_latents
         assert camera_condition is not None, print("plucker_embedding is not provided")
         latent_len = img.shape[2]
-        logger.info(f"img shape before embedding: {img.shape}")
+        # logger.info(f"img shape before embedding: {img.shape}")
 
         # Embed image and text.
         img = self.img_in(img)
-        logger.info(f"img shape after embedding: {img.shape}")
+        # logger.info(f"img shape after embedding: {img.shape}")
         # ref_latents = self.img_in(ref_latents) # off in latent concat
         if self.text_projection == "linear":
             txt = self.txt_in(txt)
@@ -667,17 +668,9 @@ class HYVideoDiffusionTransformer(ModelMixin, ConfigMixin):
 
         if camera_condition is not None:
 
-            if latent_len == 18:
-                camera_latents = torch.cat(
-                    [
-                        self.camera_net(torch.zeros_like(camera_condition)),
-                        self.camera_net(camera_condition),
-                    ],
-                    dim=1,
-                )
-            elif latent_len == 9:
-                camera_latents = self.camera_net(camera_condition)
-            elif latent_len == 10:
+            # logger.info(f"latent_len: {latent_len}")
+            # logger.info(f"camera_condition shape: {camera_condition.shape}")
+            if is_image:
                 camera_latents = torch.cat(
                     [
                         self.camera_net(
@@ -688,12 +681,16 @@ class HYVideoDiffusionTransformer(ModelMixin, ConfigMixin):
                     dim=1,
                 )
             else:
-                logger.info(f"latent_len: {latent_len}")
-                logger.info(f"camera_condition shape: {camera_condition.shape}")
-                camera_latents = self.camera_net(camera_condition)
+                camera_latents = torch.cat(
+                    [
+                        self.camera_net(torch.zeros_like(camera_condition)),
+                        self.camera_net(camera_condition),
+                    ],
+                    dim=1,
+                )
 
-            logger.info(f"image shape: {img.shape}")
-            logger.info(f"camera_latents shape: {camera_latents.shape}")
+            # logger.info(f"image shape: {img.shape}")
+            # logger.info(f"camera_latents shape: {camera_latents.shape}")
             img = img + camera_latents
 
         if CPU_OFFLOAD:
