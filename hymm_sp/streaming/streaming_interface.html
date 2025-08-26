@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GameCraft Video Streaming Interface</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            max-width: 1400px;
+            width: 100%;
+            padding: 30px;
+        }
+        
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+        }
+        
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 30px;
+        }
+        
+        .control-panel {
+            background: #f7f7f7;
+            padding: 20px;
+            border-radius: 10px;
+        }
+        
+        .section {
+            margin-bottom: 25px;
+        }
+        
+        .section h2 {
+            color: #555;
+            font-size: 1.2em;
+            margin-bottom: 15px;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 5px;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        label {
+            display: block;
+            color: #666;
+            font-weight: 500;
+            margin-bottom: 5px;
+            font-size: 0.9em;
+        }
+        
+        input[type="text"],
+        input[type="number"],
+        textarea,
+        select {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+        
+        textarea {
+            resize: vertical;
+            min-height: 60px;
+        }
+        
+        .file-upload {
+            position: relative;
+            display: inline-block;
+            width: 100%;
+        }
+        
+        .file-upload input[type="file"] {
+            position: absolute;
+            opacity: 0;
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+        }
+        
+        .file-upload-label {
+            display: block;
+            padding: 10px;
+            background: #667eea;
+            color: white;
+            text-align: center;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        
+        .file-upload-label:hover {
+            background: #5a67d8;
+        }
+        
+        .button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: all 0.3s;
+            width: 100%;
+        }
+        
+        .button:hover {
+            background: #5a67d8;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        
+        .button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .button.stop {
+            background: #e53e3e;
+            margin-top: 10px;
+        }
+        
+        .button.stop:hover {
+            background: #c53030;
+        }
+        
+        .wasd-controls {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            max-width: 200px;
+            margin: 20px auto;
+        }
+        
+        .wasd-btn {
+            padding: 20px;
+            background: #4a5568;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 20px;
+            font-weight: bold;
+            transition: all 0.2s;
+        }
+        
+        .wasd-btn:hover {
+            background: #2d3748;
+            transform: scale(1.05);
+        }
+        
+        .wasd-btn:active {
+            transform: scale(0.95);
+            background: #667eea;
+        }
+        
+        .wasd-btn.w { grid-column: 2; }
+        .wasd-btn.a { grid-column: 1; }
+        .wasd-btn.s { grid-column: 2; }
+        .wasd-btn.d { grid-column: 3; }
+        
+        .video-container {
+            background: #000;
+            border-radius: 10px;
+            overflow: hidden;
+            position: relative;
+            min-height: 500px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        #videoStream {
+            width: 100%;
+            height: auto;
+            display: none;
+        }
+        
+        .placeholder {
+            color: #888;
+            font-size: 1.2em;
+            text-align: center;
+        }
+        
+        .status {
+            margin-top: 15px;
+            padding: 10px;
+            background: #f0f0f0;
+            border-radius: 5px;
+            font-size: 0.9em;
+        }
+        
+        .status.success {
+            background: #c6f6d5;
+            color: #22543d;
+        }
+        
+        .status.error {
+            background: #fed7d7;
+            color: #742a2a;
+        }
+        
+        .status.info {
+            background: #bee3f8;
+            color: #2c5282;
+        }
+        
+        .preview-image {
+            max-width: 100%;
+            margin-top: 10px;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+        }
+        
+        .speed-control {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .speed-control input[type="range"] {
+            flex: 1;
+        }
+        
+        .speed-value {
+            min-width: 40px;
+            text-align: center;
+            font-weight: bold;
+            color: #667eea;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎮 GameCraft Video Streaming Interface</h1>
+        
+        <div class="main-content">
+            <div class="control-panel">
+                <div class="section">
+                    <h2>📸 Input Image</h2>
+                    <div class="form-group">
+                        <div class="file-upload">
+                            <input type="file" id="imageUpload" accept="image/*">
+                            <label for="imageUpload" class="file-upload-label">Choose Image</label>
+                        </div>
+                        <img id="imagePreview" class="preview-image" style="display: none;">
+                    </div>
+                </div>
+                
+                <div class="section">
+                    <h2>⚙️ Generation Parameters</h2>
+                    
+                    <div class="form-group">
+                        <label for="prompt">Prompt:</label>
+                        <textarea id="prompt" placeholder="A charming medieval village...">A charming medieval village with cobblestone streets, thatched-roof houses, and vibrant flower gardens under a bright blue sky.</textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="videoSize">Video Size:</label>
+                        <select id="videoSize">
+                            <option value="352,608" selected>352x608 (Fast)</option>
+                            <option value="704,1216">704x1216 (HD)</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="cfgScale">CFG Scale:</label>
+                        <input type="number" id="cfgScale" value="1.0" min="0.1" max="10" step="0.1">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="seed">Seed:</label>
+                        <input type="number" id="seed" value="250161" min="0">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="inferSteps">Inference Steps:</label>
+                        <input type="number" id="inferSteps" value="8" min="1" max="50">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="framesPerChunk">Frames per Chunk:</label>
+                        <input type="number" id="framesPerChunk" value="9" min="1" max="33">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>
+                            <input type="checkbox" id="useFp8" checked>
+                            Use FP8 (Faster inference)
+                        </label>
+                    </div>
+                </div>
+                
+                <button id="startBtn" class="button">🚀 Start Streaming</button>
+                <button id="stopBtn" class="button stop" style="display: none;">⏹ Stop Streaming</button>
+                
+                <div id="status" class="status" style="display: none;"></div>
+            </div>
+            
+            <div class="video-section">
+                <div class="video-container">
+                    <img id="videoStream" alt="Video Stream">
+                    <div class="placeholder">Video stream will appear here</div>
+                </div>
+                
+                <div class="section" id="controlsSection" style="display: none;">
+                    <h2>🎮 WASD Controls</h2>
+                    
+                    <div class="speed-control">
+                        <label for="actionSpeed">Movement Speed:</label>
+                        <input type="range" id="actionSpeed" min="0.1" max="1.0" step="0.1" value="0.2">
+                        <span class="speed-value">0.2</span>
+                    </div>
+                    
+                    <div class="wasd-controls">
+                        <button class="wasd-btn w" data-action="w">W</button>
+                        <button class="wasd-btn a" data-action="a">A</button>
+                        <button class="wasd-btn s" data-action="s">S</button>
+                        <button class="wasd-btn d" data-action="d">D</button>
+                    </div>
+                    
+                    <p style="text-align: center; color: #666; margin-top: 10px;">
+                        Use WASD keys or click buttons to control movement
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        const API_URL = 'http://localhost:8083';
+        let currentStreamId = null;
+        let isStreaming = false;
+        
+        // DOM elements
+        const startBtn = document.getElementById('startBtn');
+        const stopBtn = document.getElementById('stopBtn');
+        const videoStream = document.getElementById('videoStream');
+        const statusDiv = document.getElementById('status');
+        const imageUpload = document.getElementById('imageUpload');
+        const imagePreview = document.getElementById('imagePreview');
+        const controlsSection = document.getElementById('controlsSection');
+        const speedSlider = document.getElementById('actionSpeed');
+        const speedValue = document.querySelector('.speed-value');
+        const placeholder = document.querySelector('.placeholder');
+        
+        // Image upload handling
+        imageUpload.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    imagePreview.src = e.target.result;
+                    imagePreview.style.display = 'block';
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+        
+        // Speed slider
+        speedSlider.addEventListener('input', (e) => {
+            speedValue.textContent = e.target.value;
+        });
+        
+        // Convert image to base64
+        async function imageToBase64(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => {
+                    const base64 = reader.result.split(',')[1];
+                    resolve(base64);
+                };
+                reader.onerror = reject;
+                reader.readAsDataURL(file);
+            });
+        }
+        
+        // Start streaming
+        startBtn.addEventListener('click', async () => {
+            if (!imageUpload.files[0]) {
+                showStatus('Please select an image first', 'error');
+                return;
+            }
+            
+            startBtn.disabled = true;
+            showStatus('Starting stream...', 'info');
+            
+            try {
+                const imageBase64 = await imageToBase64(imageUpload.files[0]);
+                const videoSize = document.getElementById('videoSize').value.split(',').map(Number);
+                
+                const params = {
+                    image_base64: imageBase64,
+                    prompt: document.getElementById('prompt').value,
+                    video_size: videoSize,
+                    cfg_scale: parseFloat(document.getElementById('cfgScale').value),
+                    seed: parseInt(document.getElementById('seed').value),
+                    infer_steps: parseInt(document.getElementById('inferSteps').value),
+                    sample_n_frames: parseInt(document.getElementById('framesPerChunk').value),
+                    use_fp8: document.getElementById('useFp8').checked
+                };
+                
+                const response = await fetch(`${API_URL}/start_stream`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(params)
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`Failed to start stream: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                currentStreamId = data.stream_id;
+                isStreaming = true;
+                
+                // Update UI
+                startBtn.style.display = 'none';
+                stopBtn.style.display = 'block';
+                controlsSection.style.display = 'block';
+                placeholder.style.display = 'none';
+                videoStream.style.display = 'block';
+                
+                // Start video stream
+                videoStream.src = `${API_URL}/video/${currentStreamId}`;
+                
+                showStatus('Stream started successfully!', 'success');
+                
+            } catch (error) {
+                console.error('Error starting stream:', error);
+                showStatus(`Error: ${error.message}`, 'error');
+                startBtn.disabled = false;
+            }
+        });
+        
+        // Stop streaming
+        stopBtn.addEventListener('click', async () => {
+            if (!currentStreamId) return;
+            
+            try {
+                await fetch(`${API_URL}/stop_stream/${currentStreamId}`, {
+                    method: 'POST'
+                });
+                
+                isStreaming = false;
+                currentStreamId = null;
+                
+                // Reset UI
+                startBtn.style.display = 'block';
+                startBtn.disabled = false;
+                stopBtn.style.display = 'none';
+                controlsSection.style.display = 'none';
+                videoStream.style.display = 'none';
+                videoStream.src = '';
+                placeholder.style.display = 'flex';
+                
+                showStatus('Stream stopped', 'info');
+                
+            } catch (error) {
+                console.error('Error stopping stream:', error);
+                showStatus(`Error: ${error.message}`, 'error');
+            }
+        });
+        
+        // WASD control handling
+        async function sendAction(action) {
+            if (!isStreaming || !currentStreamId) return;
+            
+            try {
+                const response = await fetch(`${API_URL}/control/${currentStreamId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        action: action,
+                        speed: parseFloat(speedSlider.value)
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`Failed to send action: ${response.statusText}`);
+                }
+                
+            } catch (error) {
+                console.error('Error sending action:', error);
+                showStatus(`Error: ${error.message}`, 'error');
+            }
+        }
+        
+        // Button controls
+        document.querySelectorAll('.wasd-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                sendAction(btn.dataset.action);
+            });
+        });
+        
+        // Keyboard controls
+        document.addEventListener('keydown', (e) => {
+            if (!isStreaming) return;
+            
+            const key = e.key.toLowerCase();
+            if (['w', 'a', 's', 'd'].includes(key)) {
+                e.preventDefault();
+                sendAction(key);
+                
+                // Visual feedback
+                const btn = document.querySelector(`.wasd-btn[data-action="${key}"]`);
+                if (btn) {
+                    btn.style.background = '#667eea';
+                    setTimeout(() => {
+                        btn.style.background = '#4a5568';
+                    }, 200);
+                }
+            }
+        });
+        
+        // Status display
+        function showStatus(message, type) {
+            statusDiv.textContent = message;
+            statusDiv.className = `status ${type}`;
+            statusDiv.style.display = 'block';
+            
+            if (type === 'success' || type === 'info') {
+                setTimeout(() => {
+                    statusDiv.style.display = 'none';
+                }, 3000);
+            }
+        }
+        
+        // Check API health on load
+        async function checkHealth() {
+            try {
+                const response = await fetch(`${API_URL}/health`);
+                const data = await response.json();
+                
+                if (data.status === 'healthy') {
+                    showStatus('API server is ready', 'success');
+                } else {
+                    showStatus('API server is not ready. Please check the worker.', 'error');
+                    startBtn.disabled = true;
+                }
+            } catch (error) {
+                showStatus('Cannot connect to API server', 'error');
+                startBtn.disabled = true;
+            }
+        }
+        
+        // Initialize
+        checkHealth();
+    </script>
+</body>
+</html>
