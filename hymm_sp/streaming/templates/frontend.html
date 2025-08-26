@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GameCraft Video Streaming</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>🎮 GameCraft Video Streaming</h1>
+        
+        <div class="main-content">
+            <div class="control-panel">
+                <div class="section">
+                    <h2>📸 Input Image</h2>
+                    <div class="form-group">
+                        <div class="file-upload">
+                            <input type="file" id="imageUpload" accept="image/*">
+                            <label for="imageUpload" class="file-upload-label">Choose Image</label>
+                        </div>
+                        <img id="imagePreview" class="preview-image" style="display: none;">
+                    </div>
+                </div>
+                
+                <div class="section">
+                    <h2>⚙️ Generation Parameters</h2>
+                    
+                    <div class="form-group">
+                        <label for="prompt">Prompt:</label>
+                        <textarea id="prompt" placeholder="Describe the scene...">A charming medieval village with cobblestone streets, thatched-roof houses, and vibrant flower gardens under a bright blue sky.</textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="videoSize">Video Size:</label>
+                        <select id="videoSize">
+                            <option value="352,608" selected>352x608 (Fast)</option>
+                            <option value="704,1216">704x1216 (HD)</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="cfgScale">CFG Scale:</label>
+                        <input type="number" id="cfgScale" value="1.0" min="0.1" max="10" step="0.1">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="seed">Seed:</label>
+                        <input type="number" id="seed" value="250161" min="0">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="inferSteps">Inference Steps:</label>
+                        <input type="number" id="inferSteps" value="8" min="1" max="50">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="framesPerChunk">Frames per Chunk:</label>
+                        <input type="number" id="framesPerChunk" value="9" min="1" max="33">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>
+                            <input type="checkbox" id="useFp8" checked>
+                            Use FP8 (Faster inference)
+                        </label>
+                    </div>
+                </div>
+                
+                <button id="startBtn" class="button">🚀 Start Streaming</button>
+                <button id="stopBtn" class="button stop" style="display: none;">⏹ Stop Streaming</button>
+                
+                <div id="status" class="status" style="display: none;"></div>
+            </div>
+            
+            <div class="video-section">
+                <div class="video-container">
+                    <img id="videoStream" alt="Video Stream">
+                    <div class="placeholder">Video stream will appear here</div>
+                </div>
+                
+                <div class="section" id="controlsSection" style="display: none;">
+                    <h2>🎮 WASD Controls</h2>
+                    
+                    <div class="speed-control">
+                        <label for="actionSpeed">Movement Speed:</label>
+                        <input type="range" id="actionSpeed" min="0.1" max="1.0" step="0.1" value="0.2">
+                        <span class="speed-value">0.2</span>
+                    </div>
+                    
+                    <div class="wasd-controls">
+                        <button class="wasd-btn w" data-action="w">W</button>
+                        <button class="wasd-btn a" data-action="a">A</button>
+                        <button class="wasd-btn s" data-action="s">S</button>
+                        <button class="wasd-btn d" data-action="d">D</button>
+                    </div>
+                    
+                    <p style="text-align: center; color: #666; margin-top: 10px;">
+                        Use WASD keys or click buttons to control movement
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="/static/app.js"></script>
+</body>
+</html>

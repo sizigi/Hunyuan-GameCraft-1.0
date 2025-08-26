@@ -406,6 +406,7 @@ HTML_TEMPLATE = '''
     <script>
         let currentStreamId = null;
         let isStreaming = false;
+        let videoStreamStarted = false;
         
         // DOM elements
         const startBtn = document.getElementById('startBtn');
@@ -496,12 +497,12 @@ HTML_TEMPLATE = '''
                 stopBtn.style.display = 'block';
                 controlsSection.style.display = 'block';
                 placeholder.style.display = 'none';
+                
+                // Show uploaded image as initial frame instead of video stream
                 videoStream.style.display = 'block';
+                videoStream.src = imagePreview.src; // Show the uploaded image initially
                 
-                // Start video stream
-                videoStream.src = `/api/video/${currentStreamId}`;
-                
-                showStatus('Stream started successfully!', 'success');
+                showStatus('Stream ready! Use WASD controls to start movement.', 'success');
                 
             } catch (error) {
                 console.error('Error starting stream:', error);
@@ -521,6 +522,7 @@ HTML_TEMPLATE = '''
                 
                 isStreaming = false;
                 currentStreamId = null;
+                videoStreamStarted = false; // Reset video stream flag
                 
                 // Reset UI
                 startBtn.style.display = 'block';
@@ -542,6 +544,13 @@ HTML_TEMPLATE = '''
         // WASD control handling
         async function sendAction(action) {
             if (!isStreaming || !currentStreamId) return;
+            
+            // Switch to video stream on first action
+            if (!videoStreamStarted) {
+                videoStream.src = `/api/video/${currentStreamId}`;
+                videoStreamStarted = true;
+                showStatus('Starting video generation...', 'info');
+            }
             
             console.log(`🎮 CLIENT: Sending action '${action}' with speed ${parseFloat(speedSlider.value)}`);
             
@@ -729,8 +738,7 @@ def start_stream():
         
         logger.info(f"Started new stream: {stream_id}")
         
-        # Trigger initial generation
-        trigger_generation(stream_id, "w", 0.2)
+        # Stream is ready for user-triggered actions (no automatic generation)
         
         return jsonify({
             "stream_id": stream_id,

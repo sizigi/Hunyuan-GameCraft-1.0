@@ -1,0 +1,257 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+}
+
+.container {
+    background: white;
+    border-radius: 20px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    max-width: 1400px;
+    width: 100%;
+    padding: 30px;
+}
+
+h1 {
+    color: #333;
+    text-align: center;
+    margin-bottom: 30px;
+    font-size: 2.5em;
+}
+
+.main-content {
+    display: grid;
+    grid-template-columns: 1fr 2fr;
+    gap: 30px;
+}
+
+.control-panel {
+    background: #f7f7f7;
+    padding: 20px;
+    border-radius: 10px;
+}
+
+.section {
+    margin-bottom: 25px;
+}
+
+.section h2 {
+    color: #555;
+    font-size: 1.2em;
+    margin-bottom: 15px;
+    border-bottom: 2px solid #667eea;
+    padding-bottom: 5px;
+}
+
+.form-group {
+    margin-bottom: 15px;
+}
+
+label {
+    display: block;
+    color: #666;
+    font-weight: 500;
+    margin-bottom: 5px;
+    font-size: 0.9em;
+}
+
+input[type="text"],
+input[type="number"],
+textarea,
+select {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    font-size: 14px;
+}
+
+textarea {
+    resize: vertical;
+    min-height: 60px;
+}
+
+.file-upload {
+    position: relative;
+    display: inline-block;
+    width: 100%;
+}
+
+.file-upload input[type="file"] {
+    position: absolute;
+    opacity: 0;
+    width: 100%;
+    height: 100%;
+    cursor: pointer;
+}
+
+.file-upload-label {
+    display: block;
+    padding: 10px;
+    background: #667eea;
+    color: white;
+    text-align: center;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background 0.3s;
+}
+
+.file-upload-label:hover {
+    background: #5a67d8;
+}
+
+.button {
+    background: #667eea;
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: 600;
+    transition: all 0.3s;
+    width: 100%;
+}
+
+.button:hover {
+    background: #5a67d8;
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+}
+
+.button:disabled {
+    background: #ccc;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.button.stop {
+    background: #e53e3e;
+    margin-top: 10px;
+}
+
+.button.stop:hover {
+    background: #c53030;
+}
+
+.wasd-controls {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    max-width: 200px;
+    margin: 20px auto;
+}
+
+.wasd-btn {
+    padding: 20px;
+    background: #4a5568;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 20px;
+    font-weight: bold;
+    transition: all 0.2s;
+}
+
+.wasd-btn:hover {
+    background: #2d3748;
+    transform: scale(1.05);
+}
+
+.wasd-btn:active {
+    transform: scale(0.95);
+    background: #667eea;
+}
+
+.wasd-btn.w { grid-column: 2; }
+.wasd-btn.a { grid-column: 1; }
+.wasd-btn.s { grid-column: 2; }
+.wasd-btn.d { grid-column: 3; }
+
+.video-container {
+    background: #000;
+    border-radius: 10px;
+    overflow: hidden;
+    position: relative;
+    min-height: 500px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+#videoStream {
+    width: 100%;
+    height: auto;
+    display: none;
+}
+
+.placeholder {
+    color: #888;
+    font-size: 1.2em;
+    text-align: center;
+}
+
+.status {
+    margin-top: 15px;
+    padding: 10px;
+    background: #f0f0f0;
+    border-radius: 5px;
+    font-size: 0.9em;
+}
+
+.status.success {
+    background: #c6f6d5;
+    color: #22543d;
+}
+
+.status.error {
+    background: #fed7d7;
+    color: #742a2a;
+}
+
+.status.info {
+    background: #bee3f8;
+    color: #2c5282;
+}
+
+.preview-image {
+    max-width: 100%;
+    margin-top: 10px;
+    border-radius: 5px;
+    border: 1px solid #ddd;
+}
+
+.speed-control {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.speed-control input[type="range"] {
+    flex: 1;
+}
+
+.speed-value {
+    min-width: 40px;
+    text-align: center;
+    font-weight: bold;
+    color: #667eea;
+}
+
+@media (max-width: 768px) {
+    .main-content {
+        grid-template-columns: 1fr;
+    }
+}

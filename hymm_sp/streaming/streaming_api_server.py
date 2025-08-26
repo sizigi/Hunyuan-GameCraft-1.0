@@ -1,5 +1,6 @@
 # streaming_api_server.py
 from flask import Flask, Response, request, jsonify, send_file
+from flask_cors import CORS
 import os
 import json
 import time
@@ -17,13 +18,14 @@ import queue
 from pathlib import Path
 
 app = Flask(__name__)
+CORS(app)  # Enable CORS for all routes
 
 # ========== Configuration ==========
 TRIGGER_FILE = "./streaming_results/trigger.txt"
 RESULT_DIR = "./streaming_results"
 INPUT_IMAGES_DIR = os.path.join(RESULT_DIR, "input")
 SHUTDOWN_FILE = "./streaming_results/shutdown_worker.signal"
-MAX_WAIT_TIME = 30000
+MAX_WAIT_TIME = 180  # 3 minutes timeout for video generation (matching HTTP timeout)
 CHECK_INTERVAL = 0.1
 STREAMING_PORT = int(os.getenv("STREAMING_PORT", 8083))
 
@@ -106,6 +108,19 @@ def start_stream():
                 params["image_path"] = image_path
             del params["image_base64"]
         
+        # Clean up old streams first (keep only the 3 most recent to prevent accumulation)
+        with stream_lock:
+            if len(active_streams) > 2:  # Keep some old streams for debugging but not too many
+                # Sort by creation time (stream IDs contain timestamps)
+                sorted_streams = sorted(active_streams.keys())
+                streams_to_remove = sorted_streams[:-2]  # Keep only the 2 most recent
+                
+                for old_stream_id in streams_to_remove:
+                    if old_stream_id in active_streams:
+                        active_streams[old_stream_id].stop()
+                        del active_streams[old_stream_id]
+                        logger.info(f"🧹 Cleaned up old stream: {old_stream_id}")
+        
         # Generate stream ID
         stream_id = f"stream_{int(time.time() * 1000)}"
         
@@ -115,10 +130,9 @@ def start_stream():
             stream.generation_params = params
             active_streams[stream_id] = stream
         
-        logger.info(f"Started new stream: {stream_id}")
+        logger.info(f"Started new stream: {stream_id} (Active streams: {len(active_streams)})")
         
-        # Trigger initial generation
-        trigger_generation(stream_id, "w", 0.2)  # Start with forward movement
+        # Stream is ready for user-triggered actions (no automatic generation)
         
         return jsonify({
             "stream_id": stream_id,
@@ -168,49 +182,75 @@ def control_stream(stream_id):
 @app.route('/video/<stream_id>')
 def stream_video(stream_id):
     """Stream video chunks in MJPEG format"""
-    
-    def generate():
+    try:
+        logger.info(f"🎬 Video endpoint called for {stream_id}")
+        
+        # Check if stream exists
         with stream_lock:
             if stream_id not in active_streams:
-                return
+                logger.error(f"❌ Stream {stream_id} not found for video streaming. Active streams: {list(active_streams.keys())}")
+                return jsonify({"error": f"Stream {stream_id} not found"}), 404
             stream = active_streams[stream_id]
+            logger.info(f"✅ Found stream {stream_id}, is_active: {stream.is_active}")
         
-        logger.info(f"Starting video stream for {stream_id}")
-        
-        while stream.is_active:
-            # Wait for frames from worker
-            frames = []
-            deadline = time.time() + 1.0  # Collect frames for up to 1 second
+        def generate():
+            logger.info(f"🎬 Starting video stream generator for {stream_id}")
+            frame_count = 0
             
-            while time.time() < deadline and len(frames) < CHUNK_SIZE:
-                frame = stream.get_frame()
-                if frame is not None:
-                    frames.append(frame)
-                else:
-                    time.sleep(0.01)
-            
-            # Send collected frames as MJPEG
-            for frame in frames:
-                try:
-                    # Encode frame as JPEG
-                    if isinstance(frame, np.ndarray):
-                        _, buffer = cv2.imencode('.jpg', frame, [cv2.IMWRITE_JPEG_QUALITY, 90])
-                        jpg = buffer.tobytes()
-                    elif isinstance(frame, bytes):
-                        jpg = frame
-                    else:
-                        continue
+            try:
+                while stream.is_active:
+                    # Wait for frames from worker
+                    frames = []
+                    deadline = time.time() + 1.0  # Collect frames for up to 1 second
                     
-                    yield (b'--frame\r\n'
-                           b'Content-Type: image/jpeg\r\n\r\n' + jpg + b'\r\n')
-                except Exception as e:
-                    logger.error(f"Error encoding frame: {e}")
-            
-            # If no frames available, wait a bit
-            if not frames:
-                time.sleep(0.1)
-    
-    return Response(generate(), mimetype='multipart/x-mixed-replace; boundary=frame')
+                    while time.time() < deadline and len(frames) < CHUNK_SIZE:
+                        frame = stream.get_frame()
+                        if frame is not None:
+                            frames.append(frame)
+                        else:
+                            time.sleep(0.01)
+                    
+                    if len(frames) > 0:
+                        logger.info(f"📺 Sending {len(frames)} frames for stream {stream_id}, total sent: {frame_count}")
+                    
+                    # Send collected frames as MJPEG (EXACT format from original app)
+                    for frame in frames:
+                        try:
+                            # Encode frame as JPEG
+                            if isinstance(frame, np.ndarray):
+                                _, buffer = cv2.imencode('.jpg', frame, [cv2.IMWRITE_JPEG_QUALITY, 90])
+                                jpg = buffer.tobytes()
+                                frame_count += 1
+                            elif isinstance(frame, bytes):
+                                jpg = frame
+                                frame_count += 1
+                            else:
+                                logger.warning(f"⚠️ Unknown frame type: {type(frame)}")
+                                continue
+                            
+                            # EXACT MJPEG format from original working app
+                            yield (b'--frame\r\n'
+                                   b'Content-Type: image/jpeg\r\n\r\n' + jpg + b'\r\n')
+                        except Exception as e:
+                            logger.error(f"❌ Error encoding frame: {e}")
+                            logger.error(traceback.format_exc())
+                    
+                    # If no frames available, wait
+                    if not frames:
+                        time.sleep(0.1)
+                
+                logger.info(f"🏁 Video stream ended for {stream_id}, total frames sent: {frame_count}")
+            except Exception as e:
+                logger.error(f"❌ Error in video generator for {stream_id}: {e}")
+                logger.error(traceback.format_exc())
+        
+        # EXACT response format from original working app
+        return Response(generate(), mimetype='multipart/x-mixed-replace; boundary=frame')
+        
+    except Exception as e:
+        logger.error(f"❌ Error in video endpoint for {stream_id}: {e}")
+        logger.error(traceback.format_exc())
+        return jsonify({"error": f"Video stream error: {str(e)}"}), 500
 
 @app.route('/stop_stream/<stream_id>', methods=['POST'])
 def stop_stream(stream_id):
@@ -236,6 +276,7 @@ def trigger_generation(stream_id, action, speed):
     try:
         with stream_lock:
             if stream_id not in active_streams:
+                logger.error(f"❌ Stream {stream_id} not found when triggering generation")
                 return
             stream = active_streams[stream_id]
         
@@ -250,13 +291,16 @@ def trigger_generation(stream_id, action, speed):
             }
         }
         
+        logger.info(f"🎬 Triggering generation for {stream_id} with action '{action}' speed {speed}")
+        logger.info(f"📋 Trigger data: {json.dumps(trigger_data, indent=2)}")
+        
         # Write trigger file
         trigger_tmp = TRIGGER_FILE + ".tmp"
         with open(trigger_tmp, 'w') as f:
             json.dump(trigger_data, f, indent=2, ensure_ascii=False)
         os.replace(trigger_tmp, TRIGGER_FILE)
         
-        logger.info(f"Triggered generation for {stream_id} with action {action}")
+        logger.info(f"✅ Trigger file written: {TRIGGER_FILE}")
         
         # Start thread to wait for results
         threading.Thread(
@@ -266,7 +310,7 @@ def trigger_generation(stream_id, action, speed):
         ).start()
         
     except Exception as e:
-        logger.error(f"Failed to trigger generation: {e}")
+        logger.error(f"❌ Failed to trigger generation: {e}")
         logger.error(traceback.format_exc())
 
 def wait_for_results(stream_id):
@@ -274,38 +318,53 @@ def wait_for_results(stream_id):
     result_file = os.path.join(RESULT_DIR, f"result_{stream_id}.json")
     start_time = time.time()
     
+    logger.info(f"🔍 Waiting for result file: {result_file}")
+    
     while time.time() - start_time < MAX_WAIT_TIME:
         if os.path.exists(result_file):
             try:
+                logger.info(f"📥 Found result file for {stream_id}")
                 with open(result_file, 'r') as f:
                     result = json.load(f)
                 
+                logger.info(f"📋 Result data: {json.dumps(result, indent=2)}")
+                
                 # Process video frames
                 if "video_path" in result:
+                    logger.info(f"📺 Processing video path: {result['video_path']}")
                     add_video_to_stream(stream_id, result["video_path"])
                 elif "frames" in result:
+                    logger.info(f"📺 Processing direct frames: {len(result['frames'])} frames")
                     # Direct frame data
                     with stream_lock:
                         if stream_id in active_streams:
                             stream = active_streams[stream_id]
                             stream.add_frames(result["frames"])
+                else:
+                    logger.warning(f"⚠️ No video_path or frames in result: {result.keys()}")
                 
                 # Clean up
                 os.remove(result_file)
-                logger.info(f"Processed result for {stream_id}")
+                logger.info(f"✅ Processed and cleaned up result for {stream_id}")
                 return
                 
             except Exception as e:
-                logger.error(f"Error processing result: {e}")
+                logger.error(f"❌ Error processing result: {e}")
+                logger.error(traceback.format_exc())
                 if os.path.exists(result_file):
                     try:
                         os.remove(result_file)
                     except:
                         pass
+        else:
+            # Check if any result files exist at all
+            if (time.time() - start_time) % 5 < 0.1:  # Log every 5 seconds
+                result_files = [f for f in os.listdir(RESULT_DIR) if f.startswith("result_")]
+                logger.info(f"🔍 Waiting for {stream_id}, existing result files: {result_files}")
         
         time.sleep(CHECK_INTERVAL)
     
-    logger.warning(f"Timeout waiting for results for {stream_id}")
+    logger.warning(f"⏰ Timeout waiting for results for {stream_id}")
 
 def add_video_to_stream(stream_id, video_path):
     """Extract frames from video and add to stream"""
